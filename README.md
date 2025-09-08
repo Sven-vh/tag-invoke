@@ -153,63 +153,6 @@ int main() {
 }
 ```
 
-### Example 2: Visitation Pattern
-
-```cpp
-#include "tag_invoke.hpp"
-#include <iostream>
-#include <variant>
-#include <string>
-
-// Tag for visiting operation
-struct visit_tag {};
-inline constexpr visit_tag visit{};
-
-// Generic visit function
-template<typename Visitor, typename Variant>
-auto do_visit(Visitor&& visitor, Variant&& var) {
-    return tag_invoke(visit, std::forward<Visitor>(visitor), std::forward<Variant>(var));
-}
-
-// Custom variant-like type
-template<typename... Types>
-struct MyVariant {
-    std::variant<Types...> data;
-    
-    template<typename T>
-    MyVariant(T&& value) : data(std::forward<T>(value)) {}
-    
-    template<typename T>
-    T& get() { return std::get<T>(data); }
-    
-    template<typename T>
-    const T& get() const { return std::get<T>(data); }
-    
-    template<typename T>
-    bool holds() const { return std::holds_alternative<T>(data); }
-};
-
-// Customize visitation for MyVariant
-template<typename Visitor, typename... Types>
-auto tag_invoke(visit_tag, Visitor&& visitor, const MyVariant<Types...>& var) {
-    return std::visit(std::forward<Visitor>(visitor), var.data);
-}
-
-int main() {
-    MyVariant<int, std::string, double> var1{42};
-    MyVariant<int, std::string, double> var2{std::string("hello")};
-    
-    auto printer = [](const auto& value) {
-        std::cout << "Value: " << value << std::endl;
-    };
-    
-    do_visit(printer, var1);  // Value: 42
-    do_visit(printer, var2);  // Value: hello
-    
-    return 0;
-}
-```
-
 ## API Reference
 
 ### Core Components
@@ -274,32 +217,3 @@ std::string serialize(const T& obj) {
     return tag_invoke(serialize, obj);
 }
 ```
-
-## Best Practices
-
-1. **Use descriptive tag names**: Make your intent clear with names like `serialize_tag`, `hash_tag`, etc.
-2. **Provide meaningful defaults**: Consider what should happen when no customization exists
-3. **Document your customization points**: Clear documentation helps users understand how to extend your library
-4. **Use SFINAE or concepts**: Provide clear error messages when customizations are missing
-5. **Consider performance**: The pattern has minimal runtime overhead due to ADL resolution
-
-## Compiler Support
-
-This library requires C++17 or later and has been tested with:
-- GCC 7+
-- Clang 6+
-- MSVC 2017+
-
-## Related Work
-
-- [P1895: tag_invoke: A general pattern for supporting customizable functions](https://wg21.link/P1895)
-- [P2300: std::execution](https://wg21.link/P2300) - Uses tag_invoke extensively
-- [C++23 Standard Proposals](https://en.cppreference.com/w/cpp/23)
-
-## License
-
-This project is available under the same terms as the repository license.
-
-## Contributing
-
-Contributions are welcome! Please ensure any examples you add are clear, well-documented, and demonstrate practical use cases.
